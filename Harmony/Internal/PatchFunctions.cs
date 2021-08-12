@@ -33,7 +33,7 @@ namespace HarmonyLib
 			var sortedTranspilers = GetSortedPatchMethods(original, patchInfo.transpilers, debug);
 			var sortedFinalizers = GetSortedPatchMethods(original, patchInfo.finalizers, debug);
 
-			var patcher = new MethodPatcher(original, null, sortedPrefixes, sortedPostfixes, sortedTranspilers, sortedFinalizers, debug);
+			var patcher = new MethodPatcher(original, null, sortedPrefixes, sortedPostfixes, sortedTranspilers, sortedFinalizers, debug, patchInfo, reversePatched: false);
 			var replacement = patcher.CreateReplacement(out var finalInstructions);
 			if (replacement is null) throw new MissingMethodException($"Cannot create replacement for {original.FullDescription()}");
 
@@ -57,7 +57,7 @@ namespace HarmonyLib
 				var sortedTranspilers = GetSortedPatchMethods(original, patchInfo.transpilers, false);
 				var sortedFinalizers = GetSortedPatchMethods(original, patchInfo.finalizers, false);
 
-				var patcher = new MethodPatcher(original, null, sortedPrefixes, sortedPostfixes, sortedTranspilers, sortedFinalizers, false);
+				var patcher = new MethodPatcher(original, null, sortedPrefixes, sortedPostfixes, sortedTranspilers, sortedFinalizers, false, patchInfo, reversePatched: false);
 				var replacement = patcher.CreateReplacement(out var finalInstructions);
 				if (replacement is null) throw new MissingMethodException($"Cannot create replacement for {original.FullDescription()}");
 
@@ -86,7 +86,8 @@ namespace HarmonyLib
 			if (postTranspiler is object) transpilers.Add(postTranspiler);
 
 			var empty = new List<MethodInfo>();
-			var patcher = new MethodPatcher(standin.method, original, empty, empty, transpilers, empty, debug);
+			var patchInfo = HarmonySharedState.GetPatchInfo(original) ?? new PatchInfo();
+			var patcher = new MethodPatcher(standin.method, original, empty, empty, transpilers, empty, debug, patchInfo: null, reversePatched: true);
 			var replacement = patcher.CreateReplacement(out var finalInstructions);
 			if (replacement is null) throw new MissingMethodException($"Cannot create replacement for {standin.method.FullDescription()}");
 
