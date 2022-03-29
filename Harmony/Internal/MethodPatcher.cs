@@ -35,7 +35,7 @@ namespace HarmonyLib
 		readonly ILGenerator il;
 		readonly Emitter emitter;
 
-		internal MethodPatcher(MethodBase original, MethodBase source, List<MethodInfo> prefixes, List<MethodInfo> postfixes, List<MethodInfo> transpilers, List<MethodInfo> finalizers, bool debug)
+		internal MethodPatcher(MethodBase original, MethodBase source, List<MethodInfo> prefixes, List<MethodInfo> postfixes, List<MethodInfo> transpilers, List<MethodInfo> finalizers, bool debug, PatchInfo patchInfo, bool reversePatched)
 		{
 			if (original is null)
 				throw new ArgumentNullException(nameof(original));
@@ -56,12 +56,45 @@ namespace HarmonyLib
 
 			idx = prefixes.Count + postfixes.Count + finalizers.Count;
 			returnType = AccessTools.GetReturnedType(original);
-			patch = CreateDynamicMethod(original, $"_Patch{idx}", debug);
+			patch = CreateDynamicMethod(original, GetDynamicMethodSuffix(patchInfo, reversePatched, idx), debug);
 			if (patch is null)
 				throw new Exception("Could not create replacement method");
 
 			il = patch.GetILGenerator();
 			emitter = new Emitter(il, debug);
+		}
+
+		private static string GetDynamicMethodSuffix(PatchInfo patchInfo, bool reversePatched, int idx)
+		{
+			string suffix = "";
+
+			// patched by
+			if (patchInfo != null)
+			{
+				string[] owners = (patchInfo.prefixes.Concat(patchInfo.postfixes).Concat(patchInfo.transpilers))
+					.Select(p => p.owner?.Trim())
+					.Where(p => !string.IsNullOrEmpty(p))
+					.Distinct()
+					.OrderBy(p => p)
+					.ToArray();
+
+				if (owners.Length > 0)
+				{
+					string possibleSuffix = "_PatchedBy<" + string.Join("__", owners) + ">";
+					suffix += possibleSuffix.Length <= 500
+						? possibleSuffix
+						: $"_PatchedBy<{owners.Length}_mods>";
+				}
+			}
+
+			// reverse patch
+			if (reversePatched)
+				suffix += "_ReversePatchedByUnknown";
+
+			// add default suffix if needed
+			return suffix.Length == 0
+				? suffix + $"_Patch{idx}"
+				: suffix;
 		}
 
 		internal MethodInfo CreateReplacement(out Dictionary<int, CodeInstruction> finalInstructions)
