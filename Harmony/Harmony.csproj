@@ -114,6 +114,10 @@
 		<DefineConstants>$(DefineConstants);NET50_OR_GREATER</DefineConstants>
 	</PropertyGroup>
 
+	<PropertyGroup>
+		<DoILRepack>false</DoILRepack>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- https://dev.azure.com/MonoMod/MonoMod/_packaging?_a=feed&feed=DevBuilds -->
 		<PackageReference Include="MonoMod.Common" Version="$(MonoModCommonVersion)">
